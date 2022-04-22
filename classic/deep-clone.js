@@ -1,4 +1,4 @@
-const isType = ["Object", "Array", "Function", "RegExp", "Date", "Null"].reduce(
+const isType = ['Object', 'Array', 'Function', 'RegExp', 'Date', 'Null'].reduce(
   (pre, item) => {
     return {
       ...pre,
@@ -10,10 +10,23 @@ const isType = ["Object", "Array", "Function", "RegExp", "Date", "Null"].reduce(
   {}
 );
 
-function deepClone(data) {
+function deepClone(data, map = new Map()) {
   if (isType.isArray(data)) {
+    if (map.get(data)) {
+      return map.get(data);
+    }
+    let res = {};
+    map.set(data, res);
+
+    for (const i of data) {
+      res[i] = deepClone(i, map);
+    }
+
+    return res;
+
+    // const res = data.map((item) => deepClone(item, map));
     // 数组
-    return data.map((item) => deepClone(item));
+    return res;
   } else if (isType.isObject(data)) {
     // 对象
     return Object.keys(data).reduce((pre, cur) => {
@@ -39,6 +52,8 @@ function deepClone(data) {
 }
 
 var objects = [{ a: 1 }, undefined, null, Date.now, /^1$/g];
+objects[5] = objects;
+console.log('objects', objects);
 var cloneObjects = deepClone(objects);
 console.log(
   { objects, cloneObjects },
