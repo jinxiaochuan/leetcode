@@ -1,6 +1,12 @@
-function createStore(reducer) {
+function createStore(reducer, enhancer) {
   let state; // state记录所有状态
   let listeners = []; // 保存所有注册的回调
+
+  if (enhancer && typeof enhancer === 'function') {
+    const newCreateStore = enhancer(createStore);
+    const newStore = newCreateStore(reducer);
+    return newStore;
+  }
 
   // subscribe就是将回调保存下来
   function subscribe(callback) {
@@ -53,4 +59,31 @@ function combineReducers(reducerMap) {
   return reducer;
 }
 
-module.exports = { createStore, combineReducers };
+function compose(middlewares) {
+  return middlewares.reduce(
+    (a, b) =>
+      (...args) =>
+        a(b(...args))
+  );
+}
+
+function applyMiddleware(...middlewares) {
+  return function enhancer(createStore) {
+    return function newCreateStore(reducer) {
+      const store = createStore(reducer);
+      const chainMiddleware = middlewares.map((middleware) =>
+        middleware(store)
+      );
+      const composeMiddleware = compose(chainMiddleware);
+
+      // 增强dispatch
+      const newDispatch = composeMiddleware(store.dispatch);
+      return {
+        ...store,
+        dispatch: newDispatch,
+      };
+    };
+  };
+}
+
+module.exports = { createStore, combineReducers, applyMiddleware };
